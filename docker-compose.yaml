@@ -1,0 +1,12 @@
+services:
+  fastapi_app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DB_HOST: sql
+      DB_PORT: 1433
+      DB_NAME: PRACTIC_01
+      DB_USER: SA
+      DB_PASSWORD: CodeWithArjun123
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
