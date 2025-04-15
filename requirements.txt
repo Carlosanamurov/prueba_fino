@@ -3,3 +3,4 @@ uvicorn
 sqlalchemy
 pyodbc
 pydantic
+mysql-connector-python

@@ -4,10 +4,13 @@ FROM python:3.10-slim
 WORKDIR /app
 
 # Copiar los archivos del proyecto
-COPY . .
+COPY requirements.txt .
 
 # Instalar dependencias
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Copiar todo el proyecto
+COPY . .
 
 # Exponer el puerto donde corre FastAPI
 EXPOSE 8000
