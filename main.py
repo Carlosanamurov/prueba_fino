@@ -12,7 +12,10 @@ from database import (
     SessionLocal_SQLServer,
     SessionLocal_MySQL
 )
-from models import DimEstudiantes, DimDocentes, DimCursos
+from models import (DimEstudiantes, DimDocentes, DimCursos,
+                    DimBeca,DimExtracurriculares,DimFecha,
+                    DimLocalizacion,DimNivelEducativo,
+                    DimPadreTutor,DimTipoEvaluacion)
 from sqlalchemy.inspection import inspect
 from schemas import (DimEstudiantesBase,HechosDesempeñoEstudianteBase,
                      DimBecaBase,DimCursosBase,DimDocentesBase,
@@ -208,7 +211,14 @@ def sincronizar_datos(
     tablas = [
         {"modelo": DimEstudiantes, "nombre": "DimEstudiantes"},
         {"modelo": DimDocentes, "nombre": "DimDocentes"},
-        {"modelo": DimCursos, "nombre": "DimCursos"}
+        {"modelo": DimCursos, "nombre": "DimCursos"},
+        {"modelo": DimBeca, "nombre": "DimBeca"},
+        {"modelo": DimExtracurriculares, "nombre": "DimExtracurriculares"},
+        {"modelo": DimFecha, "nombre": "DimFecha"},
+        {"modelo": DimLocalizacion, "nombre": "DimLocalizacion"},
+        {"modelo": DimNivelEducativo, "nombre": "DimNivelEducativo"},
+        {"modelo": DimPadreTutor, "nombre": "DimPadreTutor"},
+        {"modelo": DimTipoEvaluacion, "nombre": "DimTipoEvaluacion"}
     ]
 
     resultados = {}
