@@ -1,39 +1,51 @@
-
-
-
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+import os
+from sqlalchemy.orm import declarative_base
 
-# Declara la base para tus modelos
 Base = declarative_base()
 
-# Aquí puedes configurar tu motor de base de datos
-SQLALCHEMY_DATABASE_URL = "mssql+pyodbc://SA:CodeWithArjun123@localhost:1433/PRACTIC_01?driver=ODBC+Driver+17+for+SQL+Server"  # O la URL de tu base de datos
 
-# Crear el motor y las sesiones
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"driver": "ODBC Driver 17 for SQL Server"})
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# ========== CONEXIÓN LOCAL: SQL SERVER ==========
+SQLSERVER_URL = "mssql+pyodbc://SA:CodeWithArjun123@localhost:1433/DVZ_ColegioUnion?driver=ODBC+Driver+17+for+SQL+Server"
 
-# Función para crear las tablas
-def create_database():
-    Base.metadata.create_all(bind=engine)
+engine_sqlserver = create_engine(SQLSERVER_URL, connect_args={"driver": "ODBC Driver 17 for SQL Server"})
+SessionLocal_SQLServer = sessionmaker(autocommit=False, autoflush=False, bind=engine_sqlserver)
 
+# ========== CONEXIÓN REMOTA: MYSQL ==========
+# Asegúrate que estas variables estén definidas como variables de entorno en Render o tu .env local
+MYSQL_USER = os.getenv("DB_USER", "u777467137_deviozapp")
+MYSQL_PASSWORD = os.getenv("DB_PASSWORD", "Deviozapp10+")
+MYSQL_HOST = os.getenv("DB_HOST", "auth-db465.hstgr.io")
+MYSQL_PORT = os.getenv("DB_PORT", "3306")
+MYSQL_NAME = os.getenv("DB_NAME", "u777467137_deviozapp")
 
+MYSQL_URL = f"mysql+mysqlconnector://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_NAME}"
 
-import os
-from sqlalchemy import create_engine
+engine_mysql = create_engine(MYSQL_URL)
+SessionLocal_MySQL = sessionmaker(autocommit=False, autoflush=False, bind=engine_mysql)
 
-# Variables de entorno
-DB_HOST = os.getenv("https://auth-db465.hstgr.io/index.php?route=/")
-DB_USER = os.getenv("u777467137_deviozapp")
-DB_PASSWORD = os.getenv("Deviozapp10+")
-DB_NAME = os.getenv("u777467137_deviozapp")
-DB_PORT = os.getenv("3306")  # Por defecto 3306
+# ========== OPCIONAL: Crear tablas para SQL Server ==========
+def create_sqlserver_database():
+    Base.metadata.create_all(bind=engine_sqlserver)
 
-# URI de conexión para MySQL
-SQLALCHEMY_DATABASE_URL = f"mysql+mysqlconnector://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+# ========== OPCIONAL: Crear tablas para MySQL ==========
+def create_mysql_database():
+    Base.metadata.create_all(bind=engine_mysql)
 
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
+# Dependencia para obtener sesión SQL Server
+def get_db_sqlserver():
+    db = SessionLocal_SQLServer()
+    try:
+        yield db
+    finally:
+        db.close()
 
-
+# Dependencia para obtener sesión MySQL
+def get_db_mysql():
+    db = SessionLocal_MySQL()
+    try:
+        yield db
+    finally:
+        db.close()
