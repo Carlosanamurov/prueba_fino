@@ -8,7 +8,8 @@ Base = declarative_base()
 
 
 # ========== CONEXIÓN LOCAL: SQL SERVER ==========
-SQLSERVER_URL = "mssql+pyodbc://SA:CodeWithArjun123@localhost:1433/DVZ_ColegioUnion?driver=ODBC+Driver+17+for+SQL+Server"
+#SQLSERVER_URL = "mssql+pyodbc://SA:CodeWithArjun123@localhost:1433/DVZ_ColegioUnion?driver=ODBC+Driver+17+for+SQL+Server"
+SQLSERVER_URL = "mssql+pyodbc://SA:CodeWithArjun123@serveo.net:38825/DVZ_ColegioUnion?driver=ODBC+Driver+17+for+SQL+Server"
 
 engine_sqlserver = create_engine(SQLSERVER_URL, connect_args={"driver": "ODBC Driver 17 for SQL Server"})
 SessionLocal_SQLServer = sessionmaker(autocommit=False, autoflush=False, bind=engine_sqlserver)

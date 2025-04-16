@@ -197,10 +197,11 @@ def get_desempeño_estudiante(id_estudiante: int, db: Session = Depends(get_db))
 
 #--- Sincronizar----#
 
-def get_dict(model):
+
+def get_dict(model_instance):
     return {
-        c.key: getattr(model, c.key)
-        for c in inspect(model).mapper.column_attrs
+        column.name: getattr(model_instance, column.name)
+        for column in model_instance.__table__.columns
     }
 
 @app.post("/sincronizar")
@@ -227,18 +228,27 @@ def sincronizar_datos(
         modelo = tabla["modelo"]
         nombre_tabla = tabla["nombre"]
 
-        datos_locales = db_local.query(modelo).all()
-        ids_remotos = {e.id for e in db_remoto.query(modelo.id).all()}
+        try:
+            datos_locales = db_local.query(modelo).all()
+            pk_column = list(modelo.__table__.primary_key.columns)[0]
+            ids_remotos = {
+                getattr(e, pk_column.name)
+                for e in db_remoto.query(pk_column).all()
+            }
 
-        nuevos = []
-        for fila in datos_locales:
-            if fila.id not in ids_remotos:
-                nuevos.append(modelo(**get_dict(fila)))
+            nuevos = [
+                modelo(**get_dict(fila))
+                for fila in datos_locales
+                if getattr(fila, pk_column.name) not in ids_remotos
+            ]
 
-        if nuevos:
-            db_remoto.add_all(nuevos)
-            db_remoto.commit()
+            if nuevos:
+                db_remoto.add_all(nuevos)
+                db_remoto.commit()
 
-        resultados[nombre_tabla] = f"{len(nuevos)} nuevos registros sincronizados."
+            resultados[nombre_tabla] = f"{len(nuevos)} nuevos registros sincronizados."
+
+        except Exception as e:
+            resultados[nombre_tabla] = f"Error: {str(e)}"
 
     return {"resultado": resultados}
