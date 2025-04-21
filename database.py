@@ -9,7 +9,10 @@ Base = declarative_base()
 
 # ========== CONEXIÓN LOCAL: SQL SERVER ==========
 #SQLSERVER_URL = "mssql+pyodbc://SA:CodeWithArjun123@localhost:1433/DVZ_ColegioUnion?driver=ODBC+Driver+17+for+SQL+Server"
-SQLSERVER_URL = "mssql+pyodbc://SA:CodeWithArjun123@serveo.net:38825/DVZ_ColegioUnion?driver=ODBC+Driver+17+for+SQL+Server"
+#SQLSERVER_URL = "mssql+pyodbc://SA:CodeWithArjun123@serveo.net:38825/DVZ_ColegioUnion?driver=ODBC+Driver+17+for+SQL+Server&timeout=60"
+SQLSERVER_URL = "mssql+pyodbc://SA:CodeWithArjun123@10.241.39.51:1433/DVZ_ColegioUnion?driver=ODBC+Driver+17+for+SQL+Server"
+
+
 
 engine_sqlserver = create_engine(SQLSERVER_URL, connect_args={"driver": "ODBC Driver 17 for SQL Server"})
 SessionLocal_SQLServer = sessionmaker(autocommit=False, autoflush=False, bind=engine_sqlserver)
@@ -23,6 +26,9 @@ MYSQL_PORT = os.getenv("DB_PORT", "3306")
 MYSQL_NAME = os.getenv("DB_NAME", "u777467137_deviozapp")
 
 MYSQL_URL = f"mysql+mysqlconnector://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_NAME}"
+
+#MYSQL_URL = "mysql+mysqlconnector://u777467137_deviozapp:TU_CONTRASEÑA@nombre_host_remoto/nombre_bd"
+
 
 engine_mysql = create_engine(MYSQL_URL)
 SessionLocal_MySQL = sessionmaker(autocommit=False, autoflush=False, bind=engine_mysql)
