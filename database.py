@@ -12,7 +12,7 @@ Base = declarative_base()
 
 # ========== CONEXIÓN LOCAL: SQL SERVER ==========
 #SQLSERVER_URL = "mssql+pyodbc://SA:CodeWithArjun123@localhost:1433/DVZ_ColegioUnion?driver=ODBC+Driver+17+for+SQL+Server"
-SQLSERVER_URL="mssql+pyodbc://admin-carlos%40carlos-server:%40root.123@carlos-server.database.windows.net:1433/DVZ_ColegioUnion?driver=ODBC+Driver+17+for+SQL+Server&encrypt=yes&trustservercertificate=yes&Connection+Timeout=30"
+SQLSERVER_URL="mssql+pyodbc://admin-carlos%40carlos-server:%40root.123@carlos-server.database.windows.net:1433/DVZ_ColegioUnion?driver=ODBC+Driver+18+for+SQL+Server&encrypt=yes&trustservercertificate=yes&Connection+Timeout=30"
 
 
 
