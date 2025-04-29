@@ -3,18 +3,20 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
 from sqlalchemy.orm import declarative_base
+from dotenv import load_dotenv
 
+
+load_dotenv()
 Base = declarative_base()
 
 
 # ========== CONEXIÓN LOCAL: SQL SERVER ==========
 #SQLSERVER_URL = "mssql+pyodbc://SA:CodeWithArjun123@localhost:1433/DVZ_ColegioUnion?driver=ODBC+Driver+17+for+SQL+Server"
-#SQLSERVER_URL = "mssql+pyodbc://SA:CodeWithArjun123@serveo.net:38825/DVZ_ColegioUnion?driver=ODBC+Driver+17+for+SQL+Server&timeout=60"
-SQLSERVER_URL = "mssql+pyodbc://SA:CodeWithArjun123@10.241.39.51:1433/DVZ_ColegioUnion?driver=ODBC+Driver+17+for+SQL+Server"
+SQLSERVER_URL="mssql+pyodbc://admin-carlos%40carlos-server:%40root.123@carlos-server.database.windows.net:1433/DVZ_ColegioUnion?driver=ODBC+Driver+17+for+SQL+Server&encrypt=yes&trustservercertificate=yes&Connection+Timeout=30"
 
 
 
-engine_sqlserver = create_engine(SQLSERVER_URL, connect_args={"driver": "ODBC Driver 17 for SQL Server"})
+engine_sqlserver = create_engine(SQLSERVER_URL)
 SessionLocal_SQLServer = sessionmaker(autocommit=False, autoflush=False, bind=engine_sqlserver)
 
 # ========== CONEXIÓN REMOTA: MYSQL ==========

@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  fastapi_app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DB_HOST: carlos-server.database.windows.net
+      DB_PORT: 1433
+      DB_NAME: DMZ_ColegioUnion
+      DB_USER: admin-carlos
+      DB_PASSWORD: "@root.123" # Sustituye con tu contraseña real
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload

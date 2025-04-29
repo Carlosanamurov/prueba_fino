@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
+from sqlalchemy import text
 
 import crud, models, schemas  # Sin el punto, ya que están en el mismo directorio
 from database import (
@@ -15,7 +16,7 @@ from database import (
 from models import (DimEstudiantes, DimDocentes, DimCursos,
                     DimBeca,DimExtracurriculares,DimFecha,
                     DimLocalizacion,DimNivelEducativo,
-                    DimPadreTutor,DimTipoEvaluacion)
+                    DimPadreTutor,DimTipoEvaluacion,HechosDesempeñoEstudiante)
 from sqlalchemy.inspection import inspect
 from schemas import (DimEstudiantesBase,HechosDesempeñoEstudianteBase,
                      DimBecaBase,DimCursosBase,DimDocentesBase,
@@ -172,43 +173,25 @@ def get_tipo_evaluacion(db: Session = Depends(get_db)):
 
 
 # Endpoint para obtener el desempeño de los estudiantes
-@app.get("/desempeño/", response_model=List[HechosDesempeñoEstudianteBase],include_in_schema=False)
-def get_desempeño_estudiantes(db: Session = Depends(get_db)):
-    print("🔍 Se está llamando al endpoint /desempeño/")
-    try:
-        # Llamamos a la función CRUD para obtener los datos
-        desempeño = crud.get_hechos_desempeño_estudiantes(db=db)
-        print("Desempeño de estudiantes ok")
-        return JSONResponse(content=jsonable_encoder(desempeño), media_type="application/json; charset=utf-8")
-    except Exception as e:
-        print("🔥 Error interno:", e)
-        raise HTTPException(status_code=500, detail="Error interno del servidor")
-    
-    
-    
-# Endpoint para Obtener Desempeño de un Estudiante Específico (GET por ID de Estudiante)
-@app.get("/desempeño/{id_estudiante}", response_model=schemas.HechosDesempeñoEstudianteResponse)
-def get_desempeño_estudiante(id_estudiante: int, db: Session = Depends(get_db)):
-    desempeño = crud.get_hechos_desempeño_estudiante_por_id(db=db, id_estudiante=id_estudiante)
-    if not desempeño:
-        raise HTTPException(status_code=404, detail="Desempeño de estudiante no encontrado")
-    return JSONResponse(content=jsonable_encoder(desempeño), media_type="application/json; charset=utf-8")
-    
-
-#--- Sincronizar----#
-
-
-def get_dict(model_instance):
-    return {
-        column.name: getattr(model_instance, column.name)
-        for column in model_instance.__table__.columns
-    }
-
 @app.post("/sincronizar")
 def sincronizar_datos(
     db_local: Session = Depends(get_db_sqlserver),
     db_remoto: Session = Depends(get_db_mysql)
 ):
+    tabla_config = {
+        "DimEstudiantes": ("Data_Estudiantes", "pract_01_Data_Estudiantes"),
+        "DimDocentes": ("Data_Docentes", "pract_01_Data_Docentes"),
+        "DimCursos": ("Data_Cursos", "pract_01_Data_Cursos"),
+        "DimBeca": ("Data_Beca", "pract_01_Data_Beca"),
+        "DimExtracurriculares": ("Data_Extracurriculares", "pract_01_Data_Extracurriculares"),
+        "DimFecha": ("Data_Fecha", "pract_01_Data_Fecha"),
+        "DimLocalizacion": ("Data_Localizacion", "pract_01_Data_Localizacion"),
+        "DimNivelEducativo": ("Data_NivelEducativo", "pract_01_Data_Nivel_Educativo"),
+        "DimPadreTutor": ("Data_PadreTutor", "pract_01_Data_Padre_Tutor"),
+        "DimTipoEvaluacion": ("Data_TipoEvaluacion", "pract_01_Data_Tipo_Evaluacion"),
+        "HechosDesempeñoEstudiante":("Hechos_Desempeño_Estudiante","pract_01_Hechos_Desempeño_Estudiante")
+    }
+
     tablas = [
         {"modelo": DimEstudiantes, "nombre": "DimEstudiantes"},
         {"modelo": DimDocentes, "nombre": "DimDocentes"},
@@ -219,36 +202,52 @@ def sincronizar_datos(
         {"modelo": DimLocalizacion, "nombre": "DimLocalizacion"},
         {"modelo": DimNivelEducativo, "nombre": "DimNivelEducativo"},
         {"modelo": DimPadreTutor, "nombre": "DimPadreTutor"},
-        {"modelo": DimTipoEvaluacion, "nombre": "DimTipoEvaluacion"}
+        {"modelo": DimTipoEvaluacion, "nombre": "DimTipoEvaluacion"},
+        {"modelo": HechosDesempeñoEstudiante, "nombre": "HechosDesempeñoEstudiante"}
     ]
 
     resultados = {}
 
     for tabla in tablas:
         modelo = tabla["modelo"]
-        nombre_tabla = tabla["nombre"]
+        nombre_modelo = tabla["nombre"]
+        
+        if nombre_modelo not in tabla_config:
+            resultados[nombre_modelo] = "Error: Tabla no configurada."
+            continue
+
+        nombre_tabla_local, nombre_tabla_remota = tabla_config[nombre_modelo]
 
         try:
+            # 1. Obtener datos locales
             datos_locales = db_local.query(modelo).all()
-            pk_column = list(modelo.__table__.primary_key.columns)[0]
-            ids_remotos = {
-                getattr(e, pk_column.name)
-                for e in db_remoto.query(pk_column).all()
-            }
+            
+            # 2. Obtener IDs existentes en remoto
+            pk_column = list(modelo.__table__.primary_key.columns)[0].name
+            ids_remotos = {row[0] for row in db_remoto.execute(text(f"SELECT {pk_column} FROM {nombre_tabla_remota}"))}
 
+            # 3. Filtrar registros nuevos
             nuevos = [
-                modelo(**get_dict(fila))
+                {c.name: getattr(fila, c.name) for c in modelo.__table__.columns}
                 for fila in datos_locales
-                if getattr(fila, pk_column.name) not in ids_remotos
+                if getattr(fila, pk_column) not in ids_remotos
             ]
 
+            # 4. Insertar en remoto
             if nuevos:
-                db_remoto.add_all(nuevos)
+                columnas = nuevos[0].keys()
+                placeholders = ", ".join([f":{c}" for c in columnas])
+                query = text(
+                    f"INSERT INTO {nombre_tabla_remota} ({', '.join(columnas)}) "
+                    f"VALUES ({placeholders})"
+                )
+                db_remoto.execute(query, nuevos)
                 db_remoto.commit()
 
-            resultados[nombre_tabla] = f"{len(nuevos)} nuevos registros sincronizados."
+            resultados[nombre_modelo] = f"{len(nuevos)} registros sincronizados."
 
         except Exception as e:
-            resultados[nombre_tabla] = f"Error: {str(e)}"
+            resultados[nombre_modelo] = f"Error: {str(e)}"
+            db_remoto.rollback()
 
     return {"resultado": resultados}
