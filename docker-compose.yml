@@ -1,14 +1,46 @@
-version: '3.8'
-
+version: '3'
 services:
-  fastapi_app:
+  mysql:
+    image: mysql:latest
+    container_name: mysql-container
+    environment:
+      MYSQL_ROOT_PASSWORD: root.123
+      MYSQL_DATABASE: DVZ_ColegioUnion
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - app-network
+
+  app:
     build: .
     ports:
       - "8000:8000"
+    depends_on:
+      - mysql
     environment:
-      DB_HOST: carlos-server.database.windows.net
-      DB_PORT: 1433
-      DB_NAME: DMZ_ColegioUnion
-      DB_USER: admin-carlos
-      DB_PASSWORD: "@root.123" # Sustituye con tu contraseña real
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+      DB_HOST: mysql
+      DB_NAME: DVZ_ColegioUnion
+      DB_USER: root
+      DB_PASSWORD: root.123
+    networks:
+      - app-network
+
+volumes:
+  mysql_data:
+
+networks:
+  app-network:
+    driver: bridge
+
+healthcheck:
+  test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+  interval: 5s
+  timeout: 3s
+  retries: 10
+
+depends_on:
+  mysql:
+    condition: service_healthy
+
