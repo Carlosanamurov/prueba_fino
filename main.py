@@ -6,12 +6,12 @@ from sqlalchemy import text
 import crud, models, schemas  # Sin el punto, ya que están en el mismo directorio
 from database import (
     Base,
-    engine_sqlserver,
-    engine_mysql,
+    engine_mysql_local,
+    engine_mysql_remoto,
     get_db_sqlserver,
     get_db_mysql,
-    SessionLocal_SQLServer,
-    SessionLocal_MySQL
+    SessionLocal_MySQL_LO,
+    SessionLocal_MySQL_RE
 )
 from models import (DimEstudiantes, DimDocentes, DimCursos,
                     DimBeca,DimExtracurriculares,DimFecha,
@@ -27,13 +27,13 @@ from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 
 # Crear las tablas si no existen
-models.Base.metadata.create_all(bind=engine_sqlserver)
+models.Base.metadata.create_all(bind=engine_mysql_local)
 
 app = FastAPI()
 
 # Obtener la sesión de la base de datos
 def get_db():
-    db = SessionLocal_SQLServer()
+    db = SessionLocal_MySQL_LO()
     try:
         yield db
     finally:
@@ -167,7 +167,16 @@ def get_tipo_evaluacion(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
-  
+@app.get("/desempeño/", response_model=List[HechosDesempeñoEstudianteBase],include_in_schema=False)
+def get_hecho_desempeño(db: Session = Depends(get_db)):
+    print("🔍 Se está llamando al endpoint /Hecho desempeño/")
+    try:
+        desempeño = crud.get_hechos_desempeño_estudiantes(db=db)
+        print("desempeño ok")
+        return  JSONResponse(content=jsonable_encoder(desempeño), media_type="application/json; charset=utf-8")
+    except Exception as e:
+        print("🔥 Error interno:", e)
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
     
     
 
