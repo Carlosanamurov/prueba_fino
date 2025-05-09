@@ -5,67 +5,54 @@ on:
     branches: [main]
 
 env:
-  APP_DIR: /opt/app  # Directorio de despliegue en el servidor
+  APP_DIR: /opt/app
   DOCKER_COMPOSE_FILE: docker-compose.prod.yml
+  DOCKER_IMAGE: ghcr.io/carlosanamurov/prueba_fino/fastapi-app:latest
 
 jobs:
-  deploy:
+  build-and-push:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout del código
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Instalar sshpass
-        run: sudo apt-get update && sudo apt-get install -y sshpass
-
-      - name: Login en GitHub Container Registry
+      - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.TOKEN_UNO }}  # Usar GHCR_TOKEN en lugar de TOKEN_UNO
+          password: ${{ secrets.TOKEN_UNO }}
 
-      - name: Verificar conexión SSH
+      - name: Build and push Docker image
+        run: |
+          docker build -t $DOCKER_IMAGE .
+          docker push $DOCKER_IMAGE
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install sshpass
+        run: sudo apt-get update && sudo apt-get install -y sshpass
+
+      - name: Prepare server directory
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_PASS: ${{ secrets.SSH_PASSWORD }}
         run: |
-          echo "🧪 Probando conexión SSH a $SSH_USER@$SSH_HOST..."
-          if ! sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 $SSH_USER@$SSH_HOST "echo '✅ Conexión SSH exitosa'"; then
-            echo "::error::❌ Falló la conexión SSH"
-            exit 1
-          fi
+          sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST \
+            "sudo mkdir -p $APP_DIR && sudo chown $SSH_USER:$SSH_USER $APP_DIR"
 
-      - name: Preparar directorio en el servidor
+      - name: Copy deployment files
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_PASS: ${{ secrets.SSH_PASSWORD }}
         run: |
-          echo "📂 Preparando directorio $APP_DIR en el servidor..."
-          if ! sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST \
-            "sudo mkdir -p $APP_DIR && sudo chown $SSH_USER:$SSH_USER $APP_DIR"; then
-            echo "::error::❌ Falló al preparar el directorio"
-            exit 1
-          fi
-
-      - name: Copiar archivos al servidor
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_PASS: ${{ secrets.SSH_PASSWORD }}
-        run: |
-          echo "📤 Copiando archivos al servidor..."
+          sshpass -p "$SSH_PASS" scp -o StrictHostKeyChecking=no $DOCKER_COMPOSE_FILE $SSH_USER@$SSH_HOST:$APP_DIR/
           
-          # Copiar docker-compose.prod.yml
-          if ! sshpass -p "$SSH_PASS" scp -o StrictHostKeyChecking=no $DOCKER_COMPOSE_FILE $SSH_USER@$SSH_HOST:$APP_DIR/; then
-            echo "::error::❌ Falló al copiar $DOCKER_COMPOSE_FILE"
-            exit 1
-          fi
-          
-          # Crear archivo .env
-          if ! sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST "cat > $APP_DIR/.env" <<EOF
+          sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST "cat > $APP_DIR/.env" <<EOF
           MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}
           MYSQL_USER=${{ secrets.MYSQL_USER }}
           MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}
@@ -75,27 +62,17 @@ jobs:
           DB_REMOTE_PASSWORD=${{ secrets.DB_REMOTE_PASSWORD }}
           DB_REMOTE_NAME=${{ secrets.DB_REMOTE_NAME }}
           EOF
-          then
-            echo "::error::❌ Falló al crear el archivo .env"
-            exit 1
-          fi
 
-      - name: Desplegar con Docker Compose
+      - name: Deploy application
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_PASS: ${{ secrets.SSH_PASSWORD }}
         run: |
-          echo "🚀 Iniciando despliegue en el servidor..."
-          if ! sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << 'DEPLOY_EOF'
+          sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << 'DEPLOY_EOF'
           cd $APP_DIR
-          echo "🔻 Obteniendo las últimas imágenes..."
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           docker-compose -f $DOCKER_COMPOSE_FILE pull
-          echo "🆙 Iniciando contenedores..."
           docker-compose -f $DOCKER_COMPOSE_FILE up -d
-          echo "✅ Despliegue completado con éxito"
+          docker ps
           DEPLOY_EOF
-          then
-            echo "::error::❌ Falló el despliegue"
-            exit 1
-          fi
