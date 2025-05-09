@@ -4,57 +4,68 @@ on:
   push:
     branches: [main]
 
+env:
+  APP_DIR: /opt/app  # Directorio de despliegue en el servidor
+  DOCKER_COMPOSE_FILE: docker-compose.prod.yml
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout del código
         uses: actions/checkout@v4
 
-      - name: Install sshpass
+      - name: Instalar sshpass
         run: sudo apt-get update && sudo apt-get install -y sshpass
 
-      - name: Login to GitHub Container Registry
+      - name: Login en GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.TOKEN_UNO }}  # Cambiado a GHCR_TOKEN para mejor práctica
+          password: ${{ secrets.TOKEN_UNO }}  # Usar GHCR_TOKEN en lugar de TOKEN_UNO
 
-      - name: Test SSH Connection
+      - name: Verificar conexión SSH
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_PASS: ${{ secrets.SSH_PASSWORD }}
         run: |
-          echo "Testing SSH connection to $SSH_USER@$SSH_HOST"
-          if ! sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -v $SSH_USER@$SSH_HOST "echo 'SSH Connection Successful'"; then
-            echo "::error::Failed to establish SSH connection"
+          echo "🧪 Probando conexión SSH a $SSH_USER@$SSH_HOST..."
+          if ! sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 $SSH_USER@$SSH_HOST "echo '✅ Conexión SSH exitosa'"; then
+            echo "::error::❌ Falló la conexión SSH"
             exit 1
           fi
 
-      - name: Copy files to server via SSH
+      - name: Preparar directorio en el servidor
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_PASS: ${{ secrets.SSH_PASSWORD }}
         run: |
-          set -e  # Exit immediately if any command fails
+          echo "📂 Preparando directorio $APP_DIR en el servidor..."
+          if ! sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST \
+            "sudo mkdir -p $APP_DIR && sudo chown $SSH_USER:$SSH_USER $APP_DIR"; then
+            echo "::error::❌ Falló al preparar el directorio"
+            exit 1
+          fi
+
+      - name: Copiar archivos al servidor
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PASS: ${{ secrets.SSH_PASSWORD }}
+        run: |
+          echo "📤 Copiando archivos al servidor..."
           
-          echo "Creating /opt/app directory on server..."
-          if ! sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST "mkdir -p /opt/app"; then
-            echo "::error::Failed to create directory"
+          # Copiar docker-compose.prod.yml
+          if ! sshpass -p "$SSH_PASS" scp -o StrictHostKeyChecking=no $DOCKER_COMPOSE_FILE $SSH_USER@$SSH_HOST:$APP_DIR/; then
+            echo "::error::❌ Falló al copiar $DOCKER_COMPOSE_FILE"
             exit 1
           fi
           
-          echo "Copying docker-compose.prod.yml to server..."
-          if ! sshpass -p "$SSH_PASS" scp -o StrictHostKeyChecking=no -v docker-compose.prod.yml $SSH_USER@$SSH_HOST:/opt/app/; then
-            echo "::error::Failed to copy docker-compose file"
-            exit 1
-          fi
-          
-          echo "Creating .env file on server..."
-          if ! sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST "cat > /opt/app/.env" <<EOF
+          # Crear archivo .env
+          if ! sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST "cat > $APP_DIR/.env" <<EOF
           MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}
           MYSQL_USER=${{ secrets.MYSQL_USER }}
           MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}
@@ -65,27 +76,26 @@ jobs:
           DB_REMOTE_NAME=${{ secrets.DB_REMOTE_NAME }}
           EOF
           then
-            echo "::error::Failed to create .env file"
+            echo "::error::❌ Falló al crear el archivo .env"
             exit 1
           fi
 
-      - name: Deploy with Docker Compose
+      - name: Desplegar con Docker Compose
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_PASS: ${{ secrets.SSH_PASSWORD }}
         run: |
-          set -e
-          echo "Starting deployment on server..."
-          if ! sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << 'EOF'
-          cd /opt/app
-          echo "Pulling latest images..."
-          docker-compose -f docker-compose.prod.yml pull
-          echo "Starting containers..."
-          docker-compose -f docker-compose.prod.yml up -d
-          echo "Deployment completed successfully"
-          EOF
+          echo "🚀 Iniciando despliegue en el servidor..."
+          if ! sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << 'DEPLOY_EOF'
+          cd $APP_DIR
+          echo "🔻 Obteniendo las últimas imágenes..."
+          docker-compose -f $DOCKER_COMPOSE_FILE pull
+          echo "🆙 Iniciando contenedores..."
+          docker-compose -f $DOCKER_COMPOSE_FILE up -d
+          echo "✅ Despliegue completado con éxito"
+          DEPLOY_EOF
           then
-            echo "::error::Deployment failed"
+            echo "::error::❌ Falló el despliegue"
             exit 1
           fi
