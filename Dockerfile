@@ -1,19 +1,31 @@
-FROM python:3.10-slim
+# Stage 1: Builder
+FROM python:3.9-slim as builder
 
-# Crear directorio de trabajo
 WORKDIR /app
-
-# Copiar los archivos del proyecto
 COPY requirements.txt .
 
-# Instalar dependencias
-RUN pip install --no-cache-dir -r requirements.txt
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gcc python3-dev && \
+    pip install --user --no-cache-dir -r requirements.txt
 
-# Copiar todo el proyecto
+# Stage 2: Runtime
+FROM python:3.9-slim
+
+WORKDIR /app
+COPY --from=builder /root/.local /root/.local
 COPY . .
+       
+ENV PATH=/root/.local/bin:$PATH
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
 
-# Exponer el puerto donde corre FastAPI
+# Dependiendo del entorno
+ARG ENVIRONMENT
+RUN if [ "$ENVIRONMENT" = "production" ]; then \
+        pip install gunicorn && \
+        chmod +x /app/docker-entrypoint.sh; \
+    fi
+
 EXPOSE 8000
 
-# Comando para ejecutar la app
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

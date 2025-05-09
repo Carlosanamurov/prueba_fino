@@ -8,8 +8,8 @@ from database import (
     Base,
     engine_mysql_local,
     engine_mysql_remoto,
-    get_db_sqlserver,
-    get_db_mysql,
+    get_db_mysql_local,
+    get_db_mysql_remoto,
     SessionLocal_MySQL_LO,
     SessionLocal_MySQL_RE
 )
@@ -48,7 +48,7 @@ def create_estudiante(estudiante: schemas.DimEstudiantesCreate, db: Session = De
 
 
 
-@app.get("/estudiantes/", response_model=List[DimEstudiantesBase],include_in_schema=False)
+@app.get("/estudiantes", response_model=List[DimEstudiantesBase],include_in_schema=False)
 def get_estudiantes(db: Session = Depends(get_db)):
     print("🔍 Se está llamando al endpoint /estudiantes/")
     try:
@@ -59,7 +59,7 @@ def get_estudiantes(db: Session = Depends(get_db)):
         print("🔥 Error interno:", e)
         raise HTTPException(status_code=500, detail="Error interno del servidor")
 
-@app.get("/beca/", response_model=List[DimBecaBase],include_in_schema=False)
+@app.get("/beca", response_model=List[DimBecaBase],include_in_schema=False)
 def get_beca(db: Session = Depends(get_db)):
     print("🔍 Se está llamando al endpoint /beca/")
     try:
@@ -70,7 +70,7 @@ def get_beca(db: Session = Depends(get_db)):
         print("🔥 Error interno:", e)
         raise HTTPException(status_code=500, detail="Error interno del servidor")
     
-@app.get("/cursos/", response_model=List[DimCursosBase],include_in_schema=False)
+@app.get("/cursos", response_model=List[DimCursosBase],include_in_schema=False)
 def get_cursos(db: Session = Depends(get_db)):
     print("🔍 Se está llamando al endpoint /cursos/")
     try:
@@ -81,7 +81,7 @@ def get_cursos(db: Session = Depends(get_db)):
         print("🔥 Error interno:", e)
         raise HTTPException(status_code=500, detail="Error interno del servidor")
     
-@app.get("/docentes/", response_model=List[DimBecaBase],include_in_schema=False)
+@app.get("/docentes", response_model=List[DimDocentesBase],include_in_schema=False)
 def get_beca(db: Session = Depends(get_db)):
     print("🔍 Se está llamando al endpoint /docentes/")
     try:
@@ -92,7 +92,7 @@ def get_beca(db: Session = Depends(get_db)):
         print("🔥 Error interno:", e)
         raise HTTPException(status_code=500, detail="Error interno del servidor")
 
-@app.get("/extracurriculares/", response_model=List[DimExtracurricularesBase],include_in_schema=False)
+@app.get("/extracurriculares", response_model=List[DimExtracurricularesBase],include_in_schema=False)
 def get_extracurriculares(db: Session = Depends(get_db)):
     print("🔍 Se está llamando al endpoint /extracurriculares/")
     try:
@@ -105,7 +105,7 @@ def get_extracurriculares(db: Session = Depends(get_db)):
     
 
 
-@app.get("/fechas/", response_model=List[DimFechaBase],include_in_schema=False)
+@app.get("/fechas", response_model=List[DimFechaBase],include_in_schema=False)
 def get_fecha(db: Session = Depends(get_db)):
     print("🔍 Se está llamando al endpoint /fechas/")
     try:
@@ -117,7 +117,7 @@ def get_fecha(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Error interno del servidor")
     
 
-@app.get("/nivel_educativo/", response_model=List[DimFechaBase],include_in_schema=False)
+@app.get("/nivel_educativo", response_model=List[DimNivelEducativoBase],include_in_schema=False)
 def get_nivel_educativo(db: Session = Depends(get_db)):
     print("🔍 Se está llamando al endpoint /nivel_educativo/")
     try:
@@ -129,7 +129,7 @@ def get_nivel_educativo(db: Session = Depends(get_db)):
 
 
 
-@app.get("/localizaciones/", response_model=List[DimLocalizacionBase],include_in_schema=False)
+@app.get("/localizaciones", response_model=List[DimLocalizacionBase],include_in_schema=False)
 def get_localizacion(db: Session = Depends(get_db)):
     print("🔍 Se está llamando al endpoint /localizacion/")
     try:
@@ -142,8 +142,8 @@ def get_localizacion(db: Session = Depends(get_db)):
 
 
 
-@app.get("/padres_tutor/", response_model=List[DimPadreTutorBase],include_in_schema=False)
-def get_padre_tutor(db: Session = Depends(get_db)):
+@app.get("/padres_tutor", response_model=List[DimPadreTutorBase],include_in_schema=False)
+async def get_padre_tutor(db: Session = Depends(get_db)):
     print("🔍 Se está llamando al endpoint /padres_tutor/")
     try:
         padre_tutor = crud.get_dim_padre_tutor(db=db)
@@ -155,8 +155,8 @@ def get_padre_tutor(db: Session = Depends(get_db)):
     
     
 
-@app.get("/tipo_evaluacion/", response_model=List[DimTipoEvaluacionBase],include_in_schema=False)
-def get_tipo_evaluacion(db: Session = Depends(get_db)):
+@app.get("/tipo_evaluacion", response_model=List[DimTipoEvaluacionBase],include_in_schema=False)
+async def get_tipo_evaluacion(db: Session = Depends(get_db)):
     print("🔍 Se está llamando al endpoint /tipo_evaluacion/")
     try:
         tipo_evaluacion = crud.get_dim_tipo_evaluacion(db=db)
@@ -167,8 +167,8 @@ def get_tipo_evaluacion(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
-@app.get("/desempeño/", response_model=List[HechosDesempeñoEstudianteBase],include_in_schema=False)
-def get_hecho_desempeño(db: Session = Depends(get_db)):
+@app.get("/desempeño", response_model=List[HechosDesempeñoEstudianteBase],include_in_schema=False)
+async def get_hecho_desempeño(db: Session = Depends(get_db)):
     print("🔍 Se está llamando al endpoint /Hecho desempeño/")
     try:
         desempeño = crud.get_hechos_desempeño_estudiantes(db=db)
@@ -182,10 +182,12 @@ def get_hecho_desempeño(db: Session = Depends(get_db)):
 
 
 # Endpoint para obtener el desempeño de los estudiantes
+
+
 @app.post("/sincronizar")
 def sincronizar_datos(
-    db_local: Session = Depends(get_db_sqlserver),
-    db_remoto: Session = Depends(get_db_mysql)
+    db_local: Session = Depends(get_db_mysql_local),
+    db_remoto: Session = Depends(get_db_mysql_remoto)
 ):
     tabla_config = {
         "DimEstudiantes": ("Data_Estudiantes", "pract_01_Data_Estudiantes"),
@@ -260,3 +262,74 @@ def sincronizar_datos(
             db_remoto.rollback()
 
     return {"resultado": resultados}
+
+
+
+
+
+
+# Dependencia para la DB remota
+def get_db_remote():
+    db_re = SessionLocal_MySQL_RE()
+    try:
+        yield db_re
+    finally:
+        db_re.close()
+
+
+
+@app.get("/check-remote-db")
+async def check_remote_db(db_re: Session = Depends(get_db_remote)):
+    try:
+        # Test de conexión + consulta de tablas
+        db_re.execute(text("SELECT 1"))
+        tablas = db_re.execute(text("SHOW TABLES")).fetchall()
+        
+        return {
+            "status": "success",
+            "tablas": [t[0] for t in tablas],
+            "con_prefijo": [t[0] for t in tablas if t[0].startswith('pract_01_')]
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error en la base de datos remota: {str(e)}"
+        )
+
+@app.get("/check")
+async def check_remote_db(db_re: Session = Depends(get_db_remote)):
+    try:
+        # Test de conexión + consulta de tablas
+        db_re.execute(text("SELECT 1"))
+        tablas = db_re.execute(text("SHOW TABLES")).fetchall()
+        
+        return {
+            "status": "success",
+            "tablas": [t[0] for t in tablas],
+            "con_prefijo": [t[0] for t in tablas if t[0].startswith('pract_01_')]
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error en la base de datos remota: {str(e)}"
+        )
+
+
+@app.get("/check-local")
+async def check_local(db: Session = Depends(get_db)):
+    try:
+        # Test de conexión + consulta de tablas
+        db.execute(text("SELECT 1"))
+        tablas = db.execute(text("SHOW TABLES")).fetchall()
+        
+        return {
+            "status": "success",
+            "tablas": [t[0] for t in tablas],
+            "con_prefijo": [t[0] for t in tablas if t[0].startswith('Data_')]
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error en la base de datos remota: {str(e)}"
+        )
+
