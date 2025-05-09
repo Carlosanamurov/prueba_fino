@@ -19,7 +19,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_TOKEN }}  # Cambiado a GHCR_TOKEN para mejor práctica
+          password: ${{ secrets.TOKEN_UNO }}  # Cambiado a GHCR_TOKEN para mejor práctica
 
       - name: Test SSH Connection
         env:
