@@ -44,7 +44,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.TOKEN_UNO }}  # Cambiado a GITHUB_TOKEN
+          password: ${{ secrets.TOKEN_DOS }}  # Cambiado a GITHUB_TOKEN
 
       - name: Build and push Docker image
         run: |
