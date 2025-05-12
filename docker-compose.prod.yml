@@ -2,40 +2,30 @@ version: '3.8'
 
 services:
   api:
-    image: ghcr.io/carlosanamurov/prueba_fino/fastapi-app:latest  # Usa la imagen de GHCR
-    restart: always
+    build: .
+    image: ghcr.io/carlosanamurov/prueba_fino/fastapi-app:latest
     environment:
-      # Configuración BD Local (MySQL en Docker)
       - DB_HOST=mysql-container-1
-      - DB_USER=${MYSQL_USER}
-      - DB_PASSWORD=${MYSQL_PASSWORD}
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - DB_NAME=${MYSQL_DATABASE}
-      
-      # Configuración BD Remota (Variables desde Secrets)
-      - DB_REMOTE_HOST=${DB_REMOTE_HOST}
-      - DB_REMOTE_USER=${DB_REMOTE_USER}
-      - DB_REMOTE_PASSWORD=${DB_REMOTE_PASSWORD}
-      - DB_REMOTE_NAME=${DB_REMOTE_NAME}
-      
-      # Entorno FastAPI
-      - FASTAPI_ENV=production
-      - PYTHONUNBUFFERED=1
     depends_on:
       mysql-container-1:
         condition: service_healthy
+    ports:
+      - "8000:8000"
     networks:
       - backend_network
 
   mysql-container-1:
     image: mysql:8.0
-    restart: always
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
     volumes:
-      - mysql_data:/var/lib/mysql  # Volumen persistente para producción
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql-config.cnf:/etc/mysql/conf.d/custom.cnf
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 5s
