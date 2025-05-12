@@ -332,4 +332,8 @@ async def check_local(db: Session = Depends(get_db)):
             status_code=500,
             detail=f"Error en la base de datos remota: {str(e)}"
         )
+    
+@app.get("/health")
+def health_check():
+    return {"status": "healthy"}
 

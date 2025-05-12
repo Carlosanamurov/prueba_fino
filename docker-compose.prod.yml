@@ -2,27 +2,24 @@ version: '3.8'
 
 services:
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile  # Explicita el Dockerfile
+    build: .
     image: ghcr.io/carlosanamurov/prueba_fino/fastapi-app:latest
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000  # Formato alternativo
     environment:
       - DB_HOST=mysql-container-1
       - DB_PORT=3306
       - DB_USER=root
       - DB_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - DB_NAME=${MYSQL_DATABASE}
-    restart: unless-stopped  # Añade restart policy
+    ports:
+      - "8000:8000"
     depends_on:
       mysql-container-1:
         condition: service_healthy
-    ports:
-      - "8000:8000"
     networks:
       - backend_network
-    healthcheck:  # Añade healthcheck
-      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -34,15 +31,15 @@ services:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./docker/mysql-config.cnf:/etc/mysql/conf.d/custom.cnf
+      - ./mysql-config.cnf:/etc/mysql/conf.d/custom.cnf
+    networks:
+      - backend_network
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 5s
       timeout: 10s
       retries: 10
     restart: unless-stopped
-    networks:
-      - backend_network
 
 volumes:
   mysql_data:
