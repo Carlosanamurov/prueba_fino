@@ -13,12 +13,12 @@ from database import (
     SessionLocal_MySQL_LO,
     SessionLocal_MySQL_RE
 )
-from models import (DimEstudiantes, DimDocentes, DimCursos,
+from .models import (DimEstudiantes, DimDocentes, DimCursos,
                     DimBeca,DimExtracurriculares,DimFecha,
                     DimLocalizacion,DimNivelEducativo,
                     DimPadreTutor,DimTipoEvaluacion,HechosDesempeñoEstudiante)
 from sqlalchemy.inspection import inspect
-from schemas import (DimEstudiantesBase,HechosDesempeñoEstudianteBase,
+from .schemas import (DimEstudiantesBase,HechosDesempeñoEstudianteBase,
                      DimBecaBase,DimCursosBase,DimDocentesBase,
                      DimExtracurricularesBase,DimFechaBase,
                      DimLocalizacionBase,DimPadreTutorBase,
