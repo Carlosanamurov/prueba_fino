@@ -36,33 +36,37 @@ jobs:
       
       - name: Verify files exist
         run: |
-          ls -la docker-compose.prod.yml
-          ls -la mysql-config.cnf
-          ls -la .env.prod
+          ls -la docker-compose.prod.yml || exit 1
+          ls -la mysql-config.cnf || exit 1
+          ls -la .env.prod || exit 1
       
       - name: Deploy to server
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_PASS: ${{ secrets.SSH_PASSWORD }}
-          GHCR_TOKEN: ${{ secrets.TOKEN_DOS }}
         run: |
-          # Create remote directory if not exists
+          # Create remote directory with proper permissions
           sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST \
             "sudo mkdir -p /opt/app && sudo chown $SSH_USER:$SSH_USER /opt/app && sudo chmod 755 /opt/app"
           
+          # Verify directory was created
           sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST \
-          "ls -ld /opt/app" || exit 1
+            "ls -ld /opt/app" || exit 1
           
-          # Copy files with verbose output
-          sshpass -p "$SSH_PASS" scp -v -o StrictHostKeyChecking=no \
+          # Copy deployment files
+          sshpass -p "$SSH_PASS" scp -o StrictHostKeyChecking=no \
             docker-compose.prod.yml mysql-config.cnf .env.prod \
             $SSH_USER@$SSH_HOST:/opt/app/
           
           # Execute deployment
           sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << 'DEPLOY_EOF'
+          set -e
           cd /opt/app
-          echo "$TOKEN_DOS" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          echo "${{ secrets.TOKEN_DOS }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           docker-compose -f docker-compose.prod.yml pull
           docker-compose -f docker-compose.prod.yml up -d --force-recreate
+          
+          # Wait for MySQL to be ready
+          timeout 60s bash -c 'until docker compose -f docker-compose.prod.yml exec mysql-container-1 mysqladmin ping -h localhost -u root --password="$MYSQL_ROOT_PASSWORD" --silent; do sleep 5; echo "Waiting for MySQL..."; done' || exit 1
           DEPLOY_EOF
