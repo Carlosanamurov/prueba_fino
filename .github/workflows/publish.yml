@@ -20,8 +20,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.TOKEN_DOS }}
-          run: echo "${{ secrets.TOKEN_DOS }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      
+          
       - name: Build and push
         run: |
           docker build -t $DOCKER_IMAGE .
