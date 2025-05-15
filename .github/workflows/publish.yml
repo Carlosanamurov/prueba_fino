@@ -47,7 +47,7 @@ jobs:
           SSH_PASS: ${{ secrets.SSH_PASSWORD }}
         run: |
           # Verificar variables requeridas
-          if ! grep -q "MYSQL_ROOT_PASSWORD" /opt/app/.env.prod || ! grep -q "MYSQL_DATABASE" /opt/app/.env.prod; then
+          if ! grep -q "MYSQL_ROOT_PASSWORD" .env.prod || ! grep -q "MYSQL_DATABASE" .env.prod; then
              echo "ERROR: Missing required MySQL variables in .env.prod"
              exit 1
           fi
