@@ -38,7 +38,7 @@ jobs:
         run: |
           ls -la docker-compose.prod.yml || exit 1
           ls -la mysql-config.cnf || exit 1
-          ls -la /opt/app/.env.prod || exit 1
+          ls -la .env.prod || exit 1
       
       - name: Deploy to server
         env:
@@ -48,7 +48,7 @@ jobs:
         run: |
           # Verificar variables requeridas
           if ! grep -q "MYSQL_ROOT_PASSWORD" /opt/app/.env.prod || ! grep -q "MYSQL_DATABASE" /opt/app/.env.prod; then
-             echo "ERROR: Missing required MySQL variables in /opt/app/.env.prod"
+             echo "ERROR: Missing required MySQL variables in .env.prod"
              exit 1
           fi
           # Create remote directory with proper permissions
@@ -61,7 +61,7 @@ jobs:
           
           # Copy deployment files
           sshpass -p "$SSH_PASS" scp -o StrictHostKeyChecking=no \
-            docker-compose.prod.yml mysql-config.cnf /opt/app/.env.prod \
+            docker-compose.prod.yml mysql-config.cnf .env.prod \
             $SSH_USER@$SSH_HOST:/opt/app/
           
           # Execute deployment
