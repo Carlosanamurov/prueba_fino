@@ -46,6 +46,11 @@ jobs:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_PASS: ${{ secrets.SSH_PASSWORD }}
         run: |
+          # Verificar variables requeridas
+          if ! grep -q "MYSQL_ROOT_PASSWORD" .env.prod || ! grep -q "MYSQL_DATABASE" .env.prod; then
+             echo "ERROR: Missing required MySQL variables in .env.prod"
+             exit 1
+          fi
           # Create remote directory with proper permissions
           sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST \
             "sudo mkdir -p /opt/app && sudo chown $SSH_USER:$SSH_USER /opt/app && sudo chmod 755 /opt/app"
