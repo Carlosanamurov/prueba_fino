@@ -46,25 +46,25 @@ jobs:
     SSH_USER: ${{ secrets.SSH_USER }}
     SSH_PASS: ${{ secrets.SSH_PASSWORD }}
     GHCR_TOKEN: ${{ secrets.TOKEN_DOS }}
-  run: |
-    # 1. Crear directorio con sudo
-    sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST \
-      "sudo mkdir -p /opt/app && sudo chown $SSH_USER:$SSH_USER /opt/app && sudo chmod 755 /opt/app"
+    run: |
+         # 1. Crear directorio con sudo
+          sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST \
+         "sudo mkdir -p /opt/app && sudo chown $SSH_USER:$SSH_USER /opt/app && sudo chmod 755 /opt/app"
     
-    # 2. Verificar creación
-    sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST \
-      "ls -ld /opt/app" || exit 1
+         # 2. Verificar creación
+         sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST \
+         "ls -ld /opt/app" || exit 1
     
-    # 3. Copiar archivos
-    sshpass -p "$SSH_PASS" scp -o StrictHostKeyChecking=no \
-      docker-compose.prod.yml mysql-config.cnf .env.prod \
-      $SSH_USER@$SSH_HOST:/opt/app/
+           # 3. Copiar archivos
+         sshpass -p "$SSH_PASS" scp -o StrictHostKeyChecking=no \
+         docker-compose.prod.yml mysql-config.cnf .env.prod \
+          $SSH_USER@$SSH_HOST:/opt/app/
     
-    # 4. Desplegar
-    sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << 'DEPLOY_EOF'
-    set -e
-    cd /opt/app
-    echo "$TOKEN_DOS" | docker login ghcr.io -u Carlosanamurov --password-stdin
-    docker-compose -f docker-compose.prod.yml pull
-    docker-compose -f docker-compose.prod.yml up -d --force-recreate
-    DEPLOY_EOF
+         # 4. Desplegar
+         sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << 'DEPLOY_EOF'
+         set -e
+         cd /opt/app
+         echo "$TOKEN_DOS" | docker login ghcr.io -u Carlosanamurov --password-stdin
+         docker-compose -f docker-compose.prod.yml pull
+         docker-compose -f docker-compose.prod.yml up -d --force-recreate
+         DEPLOY_EOF
