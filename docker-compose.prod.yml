@@ -10,10 +10,10 @@ services:
      # - MYSQL_USER=${MYSQL_USER}
     # - MYSQL_PASSWORD=${MYSQL_PASSWORD}
 
-      - MYSQL_ROOT_PASSWORD: "DB_root123"
-      - MYSQL_USER: "app_app_api"
-      - MYSQL_PASSWORD: "root.123"
-      - MYSQL_DATABASE: "DVZ_ColegioUnion"
+       MYSQL_ROOT_PASSWORD: "DB_root123"
+       MYSQL_USER: "app_app_api"
+       MYSQL_PASSWORD: "root.123"
+       MYSQL_DATABASE: "DVZ_ColegioUnion"
     volumes:
       - mysql_data:/var/lib/mysql
     ports:
