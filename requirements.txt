@@ -49,4 +49,4 @@ watchfiles==1.0.5
 websockets==15.0.1
 pymssql==2.3.4
 pymysql
-python:3.9
+python==3.9
