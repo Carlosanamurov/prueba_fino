@@ -39,6 +39,11 @@ jobs:
           ls -la docker-compose.prod.yml || exit 1
           ls -la mysql-config.cnf || exit 1
           ls -la .env.prod || exit 1
+          # Verificación adicional del contenido
+          if ! grep -q "MYSQL_ROOT_PASSWORD" .env.prod; then
+            echo "ERROR: MYSQL_ROOT_PASSWORD no encontrado en .env.prod"
+            exit 1
+          fi
       
       - name: Deploy to server
         env:
@@ -46,32 +51,41 @@ jobs:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_PASS: ${{ secrets.SSH_PASSWORD }}
         run: |
-          # Verificar variables requeridas
-          if ! grep -q "MYSQL_ROOT_PASSWORD" .env.prod || ! grep -q "MYSQL_DATABASE" .env.prod; then
-             echo "ERROR: Missing required MySQL variables in .env.prod"
-             exit 1
-          fi
-          # Create remote directory with proper permissions
-          sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST \
-            "sudo mkdir -p /opt/app && sudo chown $SSH_USER:$SSH_USER /opt/app && sudo chmod 755 /opt/app"
-          
-          # Verify directory was created
-          sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST \
-            "ls -ld /opt/app" || exit 1
-          
-          # Copy deployment files
-          sshpass -p "$SSH_PASS" scp -o StrictHostKeyChecking=no \
+          # Transferencia segura con verificación
+          sshpass -p "$SSH_PASS" scp -o StrictHostKeyChecking=no -v \
             docker-compose.prod.yml mysql-config.cnf .env.prod \
             $SSH_USER@$SSH_HOST:/opt/app/
           
-          # Execute deployment
-          sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << 'DEPLOY_EOF'
+          # Configuración remota de permisos
+          sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << 'REMOTE_EOF'
           set -e
           cd /opt/app
-          echo "${{ secrets.TOKEN_DOS }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          docker-compose -f docker-compose.prod.yml pull
-          docker-compose -f docker-compose.prod.yml up -d --force-recreate
           
-          # Wait for MySQL to be ready
-          timeout 60s bash -c 'until docker compose -f docker-compose.prod.yml exec mysql-container-1 mysqladmin ping -h localhost -u root --password="$MYSQL_ROOT_PASSWORD" --silent; do sleep 5; echo "Waiting for MySQL..."; done' || exit 1
-          DEPLOY_EOF
+          # Verificar que el archivo .env.prod existe y tiene contenido
+          if [ ! -f .env.prod ] || ! grep -q "MYSQL_ROOT_PASSWORD" .env.prod; then
+            echo "ERROR: Archivo .env.prod no válido en el servidor remoto"
+            exit 1
+          fi
+          
+          # Ajustar permisos
+          sudo chmod 600 .env.prod
+          sudo chown $USER:docker .env.prod
+          
+          # Login a GHCR usando el token
+          echo "${{ secrets.TOKEN_DOS }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          
+          # Despliegue
+          docker-compose -f docker-compose.prod.yml down -v
+          docker-compose -f docker-compose.prod.yml up -d
+          
+          # Esperar a MySQL con manejo de errores
+          for i in {1..12}; do
+            if docker compose -f docker-compose.prod.yml exec mysql-container-1 \
+              mysqladmin ping -h localhost -u root --password="$(grep MYSQL_ROOT_PASSWORD .env.prod | cut -d '=' -f2)" --silent; then
+              echo "MySQL está listo"
+              break
+            fi
+            echo "Esperando a MySQL... (intento $i/12)"
+            sleep 5
+          done
+          REMOTE_EOF
