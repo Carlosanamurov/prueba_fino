@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from sqlalchemy import text
 
-import crud, models, schemas  # Sin el punto, ya que están en el mismo directorio
+from . import crud, models, schemas  # Sin el punto, ya que están en el mismo directorio
 from database import (
     Base,
     engine_mysql_local,
