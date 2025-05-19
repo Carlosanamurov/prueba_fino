@@ -2,38 +2,22 @@ from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 from sqlalchemy import text
-
-from app import crud, models, schemas  # Sin el punto, ya que están en el mismo directorio
-from database import (
-    Base,
-    engine_mysql_local,
-    engine_mysql_remoto,
-    get_db_mysql_local,
-    get_db_mysql_remoto,
-    SessionLocal_MySQL_LO,
-    SessionLocal_MySQL_RE
-)
-from .models import (DimEstudiantes, DimDocentes, DimCursos,
-                    DimBeca,DimExtracurriculares,DimFecha,
-                    DimLocalizacion,DimNivelEducativo,
-                    DimPadreTutor,DimTipoEvaluacion,HechosDesempeñoEstudiante)
+import app.database
+import app.models
+import app.schemas
 from sqlalchemy.inspection import inspect
-from .schemas import (DimEstudiantesBase,HechosDesempeñoEstudianteBase,
-                     DimBecaBase,DimCursosBase,DimDocentesBase,
-                     DimExtracurricularesBase,DimFechaBase,
-                     DimLocalizacionBase,DimPadreTutorBase,
-                     DimNivelEducativoBase,DimTipoEvaluacionBase)
+
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 
 # Crear las tablas si no existen
-models.Base.metadata.create_all(bind=engine_mysql_local)
 
-app = FastAPI()
+
+appp = FastAPI()
 
 # Obtener la sesión de la base de datos
 def get_db():
-    db = SessionLocal_MySQL_LO()
+    db = app.database.SessionLocal_MySQL_LO()
     try:
         yield db
     finally:
@@ -41,62 +25,56 @@ def get_db():
 
 
 # Rutas para DimEstudiantes
-@app.post("/estudiantes/", response_model=schemas.DimEstudiantesResponse)
-def create_estudiante(estudiante: schemas.DimEstudiantesCreate, db: Session = Depends(get_db)):
-    return crud.create_dim_estudiante(db=db, estudiante=estudiante)
 
-
-
-
-@app.get("/estudiantes", response_model=List[DimEstudiantesBase],include_in_schema=False)
+@appp.get("/estudiantes", response_model=List[app.schemas.DimEstudiantesBase],include_in_schema=False)
 def get_estudiantes(db: Session = Depends(get_db)):
     print("🔍 Se está llamando al endpoint /estudiantes/")
     try:
-        estudiantes = crud.get_dim_estudiantes(db=db)
+        estudiantes = app.crud.get_dim_estudiantes(db=db)
         print("Estudiantes ok")
         return  JSONResponse(content=jsonable_encoder(estudiantes), media_type="application/json; charset=utf-8")
     except Exception as e:
         print("🔥 Error interno:", e)
         raise HTTPException(status_code=500, detail="Error interno del servidor")
 
-@app.get("/beca", response_model=List[DimBecaBase],include_in_schema=False)
+@appp.get("/beca", response_model=List[app.schemas.DimBecaBase],include_in_schema=False)
 def get_beca(db: Session = Depends(get_db)):
     print("🔍 Se está llamando al endpoint /beca/")
     try:
-        beca = crud.get_dim_beca(db=db)
+        beca = app.crud.get_dim_beca(db=db)
         print("beca ok")
         return  JSONResponse(content=jsonable_encoder(beca), media_type="application/json; charset=utf-8")
     except Exception as e:
         print("🔥 Error interno:", e)
         raise HTTPException(status_code=500, detail="Error interno del servidor")
     
-@app.get("/cursos", response_model=List[DimCursosBase],include_in_schema=False)
+@appp.get("/cursos", response_model=List[app.schemas.DimCursosBase],include_in_schema=False)
 def get_cursos(db: Session = Depends(get_db)):
     print("🔍 Se está llamando al endpoint /cursos/")
     try:
-        cursos = crud.get_dim_cursos(db=db)
+        cursos = app.crud.get_dim_cursos(db=db)
         print("cursos ok")
         return  JSONResponse(content=jsonable_encoder(cursos), media_type="application/json; charset=utf-8")
     except Exception as e:
         print("🔥 Error interno:", e)
         raise HTTPException(status_code=500, detail="Error interno del servidor")
     
-@app.get("/docentes", response_model=List[DimDocentesBase],include_in_schema=False)
+@appp.get("/docentes", response_model=List[app.schemas.DimDocentesBase],include_in_schema=False)
 def get_beca(db: Session = Depends(get_db)):
     print("🔍 Se está llamando al endpoint /docentes/")
     try:
-        docentes = crud.get_dim_docente(db=db)
+        docentes = app.crud.get_dim_docente(db=db)
         print("docentes ok")
         return  JSONResponse(content=jsonable_encoder(docentes), media_type="application/json; charset=utf-8")
     except Exception as e:
         print("🔥 Error interno:", e)
         raise HTTPException(status_code=500, detail="Error interno del servidor")
 
-@app.get("/extracurriculares", response_model=List[DimExtracurricularesBase],include_in_schema=False)
+@appp.get("/extracurriculares", response_model=List[app.schemas.DimExtracurricularesBase],include_in_schema=False)
 def get_extracurriculares(db: Session = Depends(get_db)):
     print("🔍 Se está llamando al endpoint /extracurriculares/")
     try:
-        extracurriculares = crud.get_dim_extracurriculares(db=db)
+        extracurriculares = app.crud.get_dim_extracurriculares(db=db)
         print("extracurriculares ok")
         return  JSONResponse(content=jsonable_encoder(extracurriculares), media_type="application/json; charset=utf-8")
     except Exception as e:
@@ -105,11 +83,11 @@ def get_extracurriculares(db: Session = Depends(get_db)):
     
 
 
-@app.get("/fechas", response_model=List[DimFechaBase],include_in_schema=False)
+@appp.get("/fechas", response_model=List[app.schemas.DimFechaBase],include_in_schema=False)
 def get_fecha(db: Session = Depends(get_db)):
     print("🔍 Se está llamando al endpoint /fechas/")
     try:
-        fechas = crud.get_dim_fecha(db=db)
+        fechas = app.crud.get_dim_fecha(db=db)
         print("fechas ok")
         return  JSONResponse(content=jsonable_encoder(fechas), media_type="application/json; charset=utf-8")
     except Exception as e:
@@ -117,11 +95,11 @@ def get_fecha(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Error interno del servidor")
     
 
-@app.get("/nivel_educativo", response_model=List[DimNivelEducativoBase],include_in_schema=False)
+@appp.get("/nivel_educativo", response_model=List[app.schemas.DimNivelEducativoBase],include_in_schema=False)
 def get_nivel_educativo(db: Session = Depends(get_db)):
     print("🔍 Se está llamando al endpoint /nivel_educativo/")
     try:
-        nivel_educativo = crud.get_dim_nivel_educativo(db=db)
+        nivel_educativo = app.crud.get_dim_nivel_educativo(db=db)
         print("nivel_educativo ok")
         return  JSONResponse(content=jsonable_encoder(nivel_educativo), media_type="application/json; charset=utf-8")
     except Exception as e:
@@ -129,11 +107,11 @@ def get_nivel_educativo(db: Session = Depends(get_db)):
 
 
 
-@app.get("/localizaciones", response_model=List[DimLocalizacionBase],include_in_schema=False)
+@appp.get("/localizaciones", response_model=List[app.schemas.DimLocalizacionBase],include_in_schema=False)
 def get_localizacion(db: Session = Depends(get_db)):
     print("🔍 Se está llamando al endpoint /localizacion/")
     try:
-        localizacion = crud.get_dim_localizacion(db=db)
+        localizacion = app.crud.get_dim_localizacion(db=db)
         print("localizacion ok")
         return  JSONResponse(content=jsonable_encoder(localizacion), media_type="application/json; charset=utf-8")
     except Exception as e:
@@ -142,11 +120,11 @@ def get_localizacion(db: Session = Depends(get_db)):
 
 
 
-@app.get("/padres_tutor", response_model=List[DimPadreTutorBase],include_in_schema=False)
+@appp.get("/padres_tutor", response_model=List[app.schemas.DimPadreTutorBase],include_in_schema=False)
 async def get_padre_tutor(db: Session = Depends(get_db)):
     print("🔍 Se está llamando al endpoint /padres_tutor/")
     try:
-        padre_tutor = crud.get_dim_padre_tutor(db=db)
+        padre_tutor = app.crud.get_dim_padre_tutor(db=db)
         print("padre_tutor ok")
         return  JSONResponse(content=jsonable_encoder(padre_tutor), media_type="application/json; charset=utf-8")
     except Exception as e:
@@ -155,11 +133,11 @@ async def get_padre_tutor(db: Session = Depends(get_db)):
     
     
 
-@app.get("/tipo_evaluacion", response_model=List[DimTipoEvaluacionBase],include_in_schema=False)
+@appp.get("/tipo_evaluacion", response_model=List[app.schemas.DimTipoEvaluacionBase],include_in_schema=False)
 async def get_tipo_evaluacion(db: Session = Depends(get_db)):
     print("🔍 Se está llamando al endpoint /tipo_evaluacion/")
     try:
-        tipo_evaluacion = crud.get_dim_tipo_evaluacion(db=db)
+        tipo_evaluacion = app.crud.get_dim_tipo_evaluacion(db=db)
         print("tipo_evaluacion ok")
         return  JSONResponse(content=jsonable_encoder(tipo_evaluacion), media_type="application/json; charset=utf-8")
     except Exception as e:
@@ -167,11 +145,11 @@ async def get_tipo_evaluacion(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
-@app.get("/desempeño", response_model=List[HechosDesempeñoEstudianteBase],include_in_schema=False)
+@appp.get("/desempeño", response_model=List[app.schemas.HechosDesempeñoEstudianteBase],include_in_schema=False)
 async def get_hecho_desempeño(db: Session = Depends(get_db)):
     print("🔍 Se está llamando al endpoint /Hecho desempeño/")
     try:
-        desempeño = crud.get_hechos_desempeño_estudiantes(db=db)
+        desempeño = app.crud.get_hechos_desempeño_estudiantes(db=db)
         print("desempeño ok")
         return  JSONResponse(content=jsonable_encoder(desempeño), media_type="application/json; charset=utf-8")
     except Exception as e:
@@ -184,10 +162,10 @@ async def get_hecho_desempeño(db: Session = Depends(get_db)):
 # Endpoint para obtener el desempeño de los estudiantes
 
 
-@app.post("/sincronizar")
+@appp.post("/sincronizar")
 def sincronizar_datos(
-    db_local: Session = Depends(get_db_mysql_local),
-    db_remoto: Session = Depends(get_db_mysql_remoto)
+    db_local: Session = Depends(app.database.get_db_mysql_local),
+    db_remoto: Session = Depends(app.database.get_db_mysql_remoto)
 ):
     tabla_config = {
         "DimEstudiantes": ("Data_Estudiantes", "pract_01_Data_Estudiantes"),
@@ -204,17 +182,17 @@ def sincronizar_datos(
     }
 
     tablas = [
-        {"modelo": DimEstudiantes, "nombre": "DimEstudiantes"},
-        {"modelo": DimDocentes, "nombre": "DimDocentes"},
-        {"modelo": DimCursos, "nombre": "DimCursos"},
-        {"modelo": DimBeca, "nombre": "DimBeca"},
-        {"modelo": DimExtracurriculares, "nombre": "DimExtracurriculares"},
-        {"modelo": DimFecha, "nombre": "DimFecha"},
-        {"modelo": DimLocalizacion, "nombre": "DimLocalizacion"},
-        {"modelo": DimNivelEducativo, "nombre": "DimNivelEducativo"},
-        {"modelo": DimPadreTutor, "nombre": "DimPadreTutor"},
-        {"modelo": DimTipoEvaluacion, "nombre": "DimTipoEvaluacion"},
-        {"modelo": HechosDesempeñoEstudiante, "nombre": "HechosDesempeñoEstudiante"}
+        {"modelo": app.models.DimEstudiantes, "nombre": "DimEstudiantes"},
+        {"modelo": app.models.DimDocentes, "nombre": "DimDocentes"},
+        {"modelo": app.models.DimCursos, "nombre": "DimCursos"},
+        {"modelo": app.models.DimBeca, "nombre": "DimBeca"},
+        {"modelo": app.models.DimExtracurriculares, "nombre": "DimExtracurriculares"},
+        {"modelo": app.models.DimFecha, "nombre": "DimFecha"},
+        {"modelo": app.models.DimLocalizacion, "nombre": "DimLocalizacion"},
+        {"modelo": app.models.DimNivelEducativo, "nombre": "DimNivelEducativo"},
+        {"modelo": app.models.DimPadreTutor, "nombre": "DimPadreTutor"},
+        {"modelo": app.models.DimTipoEvaluacion, "nombre": "DimTipoEvaluacion"},
+        {"modelo": app.models.HechosDesempeñoEstudiante, "nombre": "HechosDesempeñoEstudiante"}
     ]
 
     resultados = {}
@@ -267,73 +245,4 @@ def sincronizar_datos(
 
 
 
-
-# Dependencia para la DB remota
-def get_db_remote():
-    db_re = SessionLocal_MySQL_RE()
-    try:
-        yield db_re
-    finally:
-        db_re.close()
-
-
-
-@app.get("/check-remote-db")
-async def check_remote_db(db_re: Session = Depends(get_db_remote)):
-    try:
-        # Test de conexión + consulta de tablas
-        db_re.execute(text("SELECT 1"))
-        tablas = db_re.execute(text("SHOW TABLES")).fetchall()
-        
-        return {
-            "status": "success",
-            "tablas": [t[0] for t in tablas],
-            "con_prefijo": [t[0] for t in tablas if t[0].startswith('pract_01_')]
-        }
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error en la base de datos remota: {str(e)}"
-        )
-
-@app.get("/check")
-async def check_remote_db(db_re: Session = Depends(get_db_remote)):
-    try:
-        # Test de conexión + consulta de tablas
-        db_re.execute(text("SELECT 1"))
-        tablas = db_re.execute(text("SHOW TABLES")).fetchall()
-        
-        return {
-            "status": "success",
-            "tablas": [t[0] for t in tablas],
-            "con_prefijo": [t[0] for t in tablas if t[0].startswith('pract_01_')]
-        }
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error en la base de datos remota: {str(e)}"
-        )
-
-
-@app.get("/check-local")
-async def check_local(db: Session = Depends(get_db)):
-    try:
-        # Test de conexión + consulta de tablas
-        db.execute(text("SELECT 1"))
-        tablas = db.execute(text("SHOW TABLES")).fetchall()
-        
-        return {
-            "status": "success",
-            "tablas": [t[0] for t in tablas],
-            "con_prefijo": [t[0] for t in tablas if t[0].startswith('Data_')]
-        }
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error en la base de datos remota: {str(e)}"
-        )
-    
-@app.get("/health")
-def health_check():
-    return {"status": "healthy"}
 
