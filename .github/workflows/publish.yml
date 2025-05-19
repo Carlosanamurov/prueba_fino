@@ -12,6 +12,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Debug - Mostrar estructura del repo
+        run: |
+           pwd
+           ls -la
+           ls -la app
+           cat app/main.py | head -20
       
       - name: Login to GHCR
         uses: docker/login-action@v3
