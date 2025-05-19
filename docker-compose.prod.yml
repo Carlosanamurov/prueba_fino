@@ -26,7 +26,7 @@ services:
 
   api:
     volumes:
-      - ./app:/opt/app/app
+    #  - ./app:/opt/app/app
     image: ghcr.io/carlosanamurov/prueba_fino/fastapi-app:latest
     env_file: /opt/app/.env.prod
     depends_on:
